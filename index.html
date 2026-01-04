@@ -1,0 +1,70 @@
+<style>
+    .cases-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        width: 90%;
+        margin-bottom: 80px; /* Чтобы не перекрывало меню */
+    }
+
+    .case-card {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        padding: 15px;
+        text-align: center;
+    }
+
+    .case-card img {
+        width: 100%;
+        max-width: 120px;
+        filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5));
+    }
+
+    /* Нижнее меню как на скриншоте */
+    .bottom-nav {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        height: 70px;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(20px);
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .nav-item {
+        font-size: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        opacity: 0.6;
+    }
+
+    .nav-item.active { opacity: 1; color: #0088cc; }
+    .nav-item i { font-size: 20px; margin-bottom: 5px; }
+</style>
+
+<div class="cases-grid">
+    <div class="case-card">
+        <img src="https://cdn-icons-png.flaticon.com/512/6584/6584942.png" alt="NFT Box">
+        <h3>FREE BOX</h3>
+        <button class="buy-btn" onclick="buyItem(0, 'FreeBox')">ОТКРЫТЬ</button>
+    </div>
+    <div class="case-card">
+        <img src="https://cdn-icons-png.flaticon.com/512/4222/4222031.png" alt="Floor Case">
+        <h3>FLOOR CASE</h3>
+        <div class="card-price">150 ⭐️</div>
+        <button class="buy-btn" onclick="buyItem(150, 'FloorCase')">КУПИТЬ</button>
+    </div>
+</div>
+
+<div class="bottom-nav">
+    <div class="nav-item"><i>🎒</i>Инвентарь</div>
+    <div class="nav-item active"><i>🎮</i>Игры</div>
+    <div class="nav-item"><i>🏆</i>Рейтинг</div>
+    <div class="nav-item"><i>👤</i>Профиль</div>
+</div>
