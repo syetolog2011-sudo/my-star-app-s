@@ -1,56 +1,119 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body {
-            background: linear-gradient(135deg, #cf208e, #20dbd1);
-            color: white; font-family: sans-serif; text-align: center;
-            height: 100vh; margin: 0; display: flex; flex-direction: column; align-items: center;
-        }
-        .case-card {
-            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
-            border-radius: 20px; padding: 20px; margin: 20px; width: 80%;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-        button {
-            background: #0088cc; color: white; border: none;
-            padding: 10px 20px; border-radius: 10px; font-weight: bold;
-        }
+        body { background: #121212; color: white; font-family: sans-serif; margin: 0; padding-bottom: 80px; }
+        .header { display: flex; justify-content: space-between; padding: 15px; align-items: center; }
+        .stars-balance { background: rgba(255,255,255,0.1); padding: 8px 15px; border-radius: 20px; display: flex; align-items: center; gap: 5px; }
+        
+        /* Рулетка */
+        .roulette-wrapper { position: relative; width: 100%; height: 120px; background: #1a1a1a; margin: 20px 0; overflow: hidden; border-top: 2px solid #333; border-bottom: 2px solid #333; }
+        .pointer { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 2px; height: 100%; background: white; z-index: 10; }
+        .tape { display: flex; position: absolute; left: 0; transition: transform 4s cubic-bezier(0.1, 0, 0.1, 1); height: 100%; }
+        .gift-item { min-width: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 30px; border-right: 1px solid #333; }
+        .gift-price { font-size: 12px; color: #ffd700; margin-top: 5px; }
+
+        /* Сетка подарков (как на фото) */
+        .gift-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; }
+        .grid-card { background: #1e1e1e; border-radius: 15px; padding: 15px; text-align: center; border: 1px solid #333; }
+        .grid-card img { width: 50px; height: 50px; margin-bottom: 10px; }
+        .price-tag { background: rgba(255,215,0,0.1); color: #ffd700; padding: 4px 10px; border-radius: 10px; font-size: 12px; }
+
+        /* Пополнение */
+        .deposit-screen { padding: 20px; text-align: center; }
+        .star-amount { font-size: 48px; margin: 20px 0; }
+        .preset-buttons { display: flex; gap: 10px; justify-content: center; margin-bottom: 30px; }
+        .preset-btn { background: #2c2c2c; border: none; color: #ffd700; padding: 10px; border-radius: 10px; flex: 1; }
+
+        .nav { position: fixed; bottom: 0; width: 100%; background: #1a1a1a; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #333; }
+        .buy-btn { background: #0088cc; color: white; border: none; padding: 15px 40px; border-radius: 12px; font-weight: bold; margin: 20px; width: calc(100% - 40px); }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
-    <h1>NFT CASES</h1>
-    
-    <div class="case-card">
-        <h3>STARTER CASE</h3>
-        <p>Цена: 5 ⭐️</p>
-        <button onclick="sendBuy(5, 'STARTER CASE')">КУПИТЬ</button>
+    <div id="main-page">
+        <div class="header">
+            <div class="stars-balance">⭐ <span id="balance">3.14</span> <span style="color:#0088cc; font-size:20px" onclick="showPage('deposit')">+</span></div>
+        </div>
+
+        <div class="roulette-wrapper">
+            <div class="pointer"></div>
+            <div class="tape" id="tape"></div>
+        </div>
+
+        <button class="buy-btn" onclick="spin()">ОТКРЫТЬ КЕЙС 5 ⭐</button>
+
+        <div class="gift-grid">
+            <div class="grid-card">🎄<br><span class="price-tag">⭐ 50</span></div>
+            <div class="grid-card">💖<br><span class="price-tag">⭐ 15</span></div>
+            <div class="grid-card">🧸<br><span class="price-tag">⭐ 50</span></div>
+            <div class="grid-card">🎁<br><span class="price-tag">⭐ 25</span></div>
+            <div class="grid-card">🌹<br><span class="price-tag">⭐ 25</span></div>
+            <div class="grid-card">🎂<br><span class="price-tag">⭐ 50</span></div>
+        </div>
     </div>
 
-    <div class="case-card">
-        <h3>RARE CASE</h3>
-        <p>Цена: 15 ⭐️</p>
-        <button onclick="sendBuy(15, 'RARE CASE')">КУПИТЬ</button>
+    <div id="deposit-page" class="hidden">
+        <div class="deposit-screen">
+            <div class="star-amount"><span id="dep-val">0</span> Stars</div>
+            <div class="preset-buttons">
+                <button class="preset-btn" onclick="addDep(200)">+ 200 ⭐</button>
+                <button class="preset-btn" onclick="addDep(500)">+ 500 ⭐</button>
+                <button class="preset-btn" onclick="addDep(1000)">+ 1000 ⭐</button>
+            </div>
+            <button class="buy-btn" onclick="payDep()">Оплатить</button>
+            <button class="preset-btn" onclick="showPage('main')">Назад</button>
+        </div>
+    </div>
+
+    <div class="nav">
+        <div onclick="showPage('main')">КЕЙСЫ</div>
+        <div>ИНВЕНТАРЬ</div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
+        
+        const gifts = [
+            {icon: '❌', name: 'Ничего', price: 0, chance: 60},
+            {icon: '💖', name: 'Heart', price: 15, chance: 25},
+            {icon: '🎁', name: 'Box', price: 25, chance: 10},
+            {icon: '🎄', name: 'Tree', price: 50, chance: 5}
+        ];
 
-        function sendBuy(price, name) {
-            // Создаем объект с данными
-            const data = JSON.stringify({
-                action: 'open_case',
-                price: price,
-                item_name: name
-            });
+        // Инициализация ленты
+        const tape = document.getElementById('tape');
+        for(let i=0; i<60; i++) {
+            const g = gifts[Math.floor(Math.random()*gifts.length)];
+            const div = document.createElement('div');
+            div.className = 'gift-item';
+            div.innerHTML = `${g.icon}<div class="gift-price">${g.price} ⭐</div>`;
+            tape.appendChild(div);
+        }
 
-            // ОТПРАВЛЯЕМ БОТУ
-            tg.sendData(data);
+        function spin() {
+            const winIdx = 45; // Индекс выигрыша
+            const stopPos = (winIdx * 100) - (window.innerWidth/2 - 50);
+            tape.style.transform = `translateX(-${stopPos}px)`;
             
-            // ЗАКРЫВАЕМ ПРИЛОЖЕНИЕ (чтобы увидеть счет в чате)
+            setTimeout(() => {
+                tg.sendData(JSON.stringify({action: 'spin', price: 5}));
+                setTimeout(() => tg.close(), 1000);
+            }, 4500);
+        }
+
+        let currentDep = 0;
+        function addDep(v) { currentDep += v; document.getElementById('dep-val').innerText = currentDep; }
+        function showPage(p) {
+            document.getElementById('main-page').classList.toggle('hidden', p !== 'main');
+            document.getElementById('deposit-page').classList.toggle('hidden', p !== 'deposit');
+        }
+        function payDep() {
+            tg.sendData(JSON.stringify({action: 'deposit', amount: currentDep}));
             tg.close();
         }
     </script>
