@@ -5,30 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --bg: #0f0f0f; --card: #1a1a1a; --accent: #ffd700; --blue: #0088cc; }
-        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; padding-bottom: 80px; }
+        :root { --bg: #0f0f0f; --card: #1a1a1a; --accent: #ffd700; --blue: #0088cc; --red: #ff4444; }
+        body { background: var(--bg); color: white; font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 80px; overflow-x: hidden; }
         
         .header { display: flex; justify-content: space-between; padding: 15px 20px; align-items: center; }
-        .balance-badge { background: rgba(255,255,255,0.07); padding: 8px 16px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-weight: bold; border: 1px solid #333; cursor: pointer; }
-        
-        /* Модальное окно ввода суммы */
+        .balance-badge { background: rgba(255,255,255,0.07); padding: 8px 16px; border-radius: 25px; display: flex; align-items: center; gap: 8px; font-weight: bold; border: 1px solid #333; cursor: pointer; }
+
+        /* Окно ввода суммы */
         #deposit-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 100; }
         .modal-box { background: var(--card); padding: 25px; border-radius: 20px; width: 80%; text-align: center; border: 1px solid #333; }
-        .modal-input { width: 100%; background: #000; border: 1px solid #444; padding: 12px; border-radius: 10px; color: white; font-size: 18px; text-align: center; margin: 15px 0; box-sizing: border-box; }
+        .modal-input { width: 100%; background: #000; border: 1px solid #444; padding: 12px; border-radius: 10px; color: white; font-size: 18px; text-align: center; margin: 15px 0; outline: none; }
 
+        /* Рулетка */
         .roulette-container { position: relative; width: 100%; height: 140px; background: #141414; margin: 10px 0; overflow: hidden; border-top: 1px solid #333; border-bottom: 1px solid #333; }
         .pointer { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 2px; height: 100%; background: white; z-index: 5; box-shadow: 0 0 10px #fff; }
         .tape { display: flex; position: absolute; left: 0; height: 100%; transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1); }
         .tape-item { min-width: 110px; display: flex; justify-content: center; align-items: center; }
         .tape-item img { width: 75px; height: 75px; object-fit: contain; }
 
+        /* Сетка подарков */
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; }
         .card { background: var(--card); border-radius: 12px; padding: 10px; text-align: center; border: 1px solid #2a2a2a; }
         .card img { width: 45px; height: 45px; margin-bottom: 5px; }
-        
+        .price { font-size: 12px; color: var(--accent); }
+
         .main-btn { background: var(--blue); color: white; border: none; width: 90%; padding: 16px; border-radius: 15px; font-size: 16px; font-weight: bold; margin: 10px 5%; cursor: pointer; }
+        
+        /* Навигация */
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: #141414; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #333; }
-        .nav-item { color: #666; font-size: 12px; font-weight: bold; }
+        .nav-item { color: #666; font-size: 12px; font-weight: bold; cursor: pointer; }
         .nav-active { color: white; }
         .hidden { display: none; }
     </style>
@@ -37,15 +42,15 @@
 
 <div id="deposit-modal">
     <div class="modal-box">
-        <h3 style="margin:0">Введите сумму ⭐</h3>
-        <input type="number" id="dep-sum" class="modal-input" value="100">
+        <h3 style="margin:0">Пополнить Звезды</h3>
+        <input type="number" id="dep-sum" class="modal-input" value="50">
         <button class="main-btn" style="margin:0; width:100%" onclick="sendDeposit()">ОПЛАТИТЬ</button>
-        <p onclick="closeModal()" style="color:red; margin-top:15px; cursor:pointer">Отмена</p>
+        <p onclick="closeModal()" style="color:var(--red); margin-top:15px; cursor:pointer">Отмена</p>
     </div>
 </div>
 
 <div class="header">
-    <div class="balance-badge" onclick="openModal()">⭐ <span id="bal">0</span> <span style="color:#0088cc">+</span></div>
+    <div class="balance-badge" onclick="openModal()">⭐ <span id="bal">0</span> <span style="color:var(--blue)">+</span></div>
     <div style="font-weight: bold; color: var(--accent);">STARS CASE</div>
 </div>
 
@@ -59,8 +64,8 @@
 </div>
 
 <div id="tab-inv" class="hidden">
-    <h3 style="text-align:center">Инвентарь</h3>
-    <div id="inventory-list" style="padding: 20px; text-align: center; color: #666;">Тут будут ваши призы</div>
+    <h3 style="text-align:center">Ваш Инвентарь</h3>
+    <div id="inventory-list" style="text-align:center; color:#666; padding:20px;">Предметы появятся здесь после выигрыша</div>
 </div>
 
 <div class="nav-bar">
@@ -75,20 +80,28 @@
     let balance = new URLSearchParams(window.location.search).get('balance') || 0;
     document.getElementById('bal').innerText = balance;
 
+    // Список всех предметов ВКЛЮЧАЯ "Ничего" (0.jpg)
     const gifts = [
-        { i: '1.jpg', p: 15 }, { i: '2.jpg', p: 25 }, { i: '3.jpg', p: 25 },
-        { i: '4.jpg', p: 50 }, { i: '5.jpg', p: 50 }, { i: '6.jpg', p: 50 }
+        { id: 0, img: '0.jpg', name: 'Ничего', p: 0 },
+        { id: 1, img: '1.jpg', name: 'Сердце', p: 15 },
+        { id: 2, img: '2.jpg', name: 'Коробка', p: 25 },
+        { id: 3, img: '3.jpg', name: 'Роза', p: 25 },
+        { id: 4, img: '4.jpg', name: 'Торт', p: 50 },
+        { id: 5, img: '5.jpg', name: 'Мишка', p: 50 },
+        { id: 6, img: '6.jpg', name: 'Елка', p: 50 }
     ];
 
+    // Отрисовка витрины (без "Ничего")
     const grid = document.getElementById('main-grid');
-    gifts.forEach(g => {
-        grid.innerHTML += `<div class="card"><img src="${g.i}"><br><small>⭐ ${g.p}</small></div>`;
+    gifts.slice(1).forEach(g => {
+        grid.innerHTML += `<div class="card"><img src="${g.img}"><div class="price">⭐ ${g.p}</div></div>`;
     });
 
+    // Отрисовка ленты (с шансом на "Ничего")
     const tape = document.getElementById('tape');
-    for(let i=0; i<80; i++) {
-        const r = gifts[Math.floor(Math.random() * gifts.length)];
-        tape.innerHTML += `<div class="tape-item"><img src="${r.i}"></div>`;
+    for(let i=0; i<90; i++) {
+        const item = gifts[Math.floor(Math.random() * gifts.length)];
+        tape.innerHTML += `<div class="tape-item"><img src="${item.img}"></div>`;
     }
 
     function openModal() { document.getElementById('deposit-modal').style.display = 'flex'; }
@@ -110,11 +123,14 @@
     }
 
     function startSpin() {
-        if(parseInt(balance) < 5) { tg.showAlert("Мало звезд!"); return; }
+        if(parseInt(balance) < 5) { tg.showAlert("Недостаточно звезд!"); return; }
         const btn = document.getElementById('spin-btn');
         btn.disabled = true;
-        const move = 65 * 110 - (window.innerWidth / 2 - 55);
+        btn.style.opacity = "0.5";
+        
+        const move = 75 * 110 - (window.innerWidth / 2 - 55);
         tape.style.transform = `translateX(-${move}px)`;
+        
         setTimeout(() => {
             tg.sendData(JSON.stringify({action: 'spin'}));
             setTimeout(() => tg.close(), 1000);
