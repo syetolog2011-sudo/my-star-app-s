@@ -5,48 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --bg: #0f0f0f; --card: #1a1a1a; --accent: #ffd700; --blue: #0088cc; --red: #ff4444; }
-        body { background: var(--bg); color: white; font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding-bottom: 80px; }
+        :root { --bg: #0f0f0f; --card: #1a1a1a; --accent: #ffd700; --blue: #0088cc; }
+        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; padding-bottom: 80px; }
         
-        /* Хедер */
-        .header { display: flex; justify-content: space-between; padding: 15px 20px; align-items: center; position: sticky; top: 0; background: var(--bg); z-index: 10; }
-        .balance-badge { background: rgba(255,255,255,0.07); padding: 8px 16px; border-radius: 25px; display: flex; align-items: center; gap: 8px; font-weight: bold; border: 1px solid #333; }
-        .plus { color: var(--blue); font-size: 20px; }
+        .header { display: flex; justify-content: space-between; padding: 15px 20px; align-items: center; }
+        .balance-badge { background: rgba(255,255,255,0.07); padding: 8px 16px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-weight: bold; border: 1px solid #333; cursor: pointer; }
+        
+        /* Модальное окно ввода суммы */
+        #deposit-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 100; }
+        .modal-box { background: var(--card); padding: 25px; border-radius: 20px; width: 80%; text-align: center; border: 1px solid #333; }
+        .modal-input { width: 100%; background: #000; border: 1px solid #444; padding: 12px; border-radius: 10px; color: white; font-size: 18px; text-align: center; margin: 15px 0; box-sizing: border-box; }
 
-        /* Рулетка */
-        .roulette-container { position: relative; width: 100%; height: 140px; background: #141414; margin: 10px 0; overflow: hidden; border-y: 1px solid #333; }
+        .roulette-container { position: relative; width: 100%; height: 140px; background: #141414; margin: 10px 0; overflow: hidden; border-top: 1px solid #333; border-bottom: 1px solid #333; }
         .pointer { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 2px; height: 100%; background: white; z-index: 5; box-shadow: 0 0 10px #fff; }
         .tape { display: flex; position: absolute; left: 0; height: 100%; transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1); }
         .tape-item { min-width: 110px; display: flex; justify-content: center; align-items: center; }
-        .tape-item img { width: 70px; height: 70px; object-fit: contain; }
+        .tape-item img { width: 75px; height: 75px; object-fit: contain; }
 
-        /* Сетка подарков (Главная) */
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; }
-        .card { background: var(--card); border-radius: 12px; padding: 12px; text-align: center; border: 1px solid #2a2a2a; }
-        .card img { width: 50px; height: 50px; margin-bottom: 8px; }
-        .price-tag { font-size: 12px; color: var(--accent); background: rgba(255,215,0,0.1); padding: 2px 8px; border-radius: 8px; display: inline-block; }
-
-        /* Инвентарь */
-        .inv-item { display: flex; align-items: center; background: var(--card); margin: 10px 15px; padding: 12px; border-radius: 15px; border: 1px solid #333; }
-        .inv-item img { width: 60px; height: 60px; margin-right: 15px; }
-        .inv-info { flex-grow: 1; }
-        .inv-name { font-weight: bold; font-size: 16px; margin-bottom: 4px; }
-        .inv-btns { display: flex; gap: 8px; }
-        .btn-sm { padding: 6px 12px; border-radius: 8px; border: none; font-weight: bold; font-size: 12px; color: white; flex: 1; }
-        .btn-sell { background: #333; }
-        .btn-out { background: var(--blue); }
-
-        /* Кнопки и Навигация */
-        .main-btn { background: var(--blue); color: white; border: none; width: 90%; padding: 16px; border-radius: 15px; font-size: 16px; font-weight: bold; margin: 10px 5%; }
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: #141414; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #333; }
-        .nav-item { color: #666; font-size: 12px; font-weight: bold; transition: 0.3s; }
-        .nav-active { color: white; transform: scale(1.1); }
-
-        /* Модалка пополнения */
-        #deposit-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 100; }
-        .modal-box { background: var(--card); padding: 25px; border-radius: 20px; width: 80%; text-align: center; border: 1px solid #333; }
-        .modal-input { width: 100%; background: #000; border: 1px solid #444; padding: 12px; border-radius: 10px; color: white; font-size: 18px; text-align: center; margin: 15px 0; outline: none; }
+        .card { background: var(--card); border-radius: 12px; padding: 10px; text-align: center; border: 1px solid #2a2a2a; }
+        .card img { width: 45px; height: 45px; margin-bottom: 5px; }
         
+        .main-btn { background: var(--blue); color: white; border: none; width: 90%; padding: 16px; border-radius: 15px; font-size: 16px; font-weight: bold; margin: 10px 5%; cursor: pointer; }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: #141414; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #333; }
+        .nav-item { color: #666; font-size: 12px; font-weight: bold; }
+        .nav-active { color: white; }
         .hidden { display: none; }
     </style>
 </head>
@@ -54,16 +37,16 @@
 
 <div id="deposit-modal">
     <div class="modal-box">
-        <h3 style="margin:0">Пополнить Звезды</h3>
-        <input type="number" id="dep-sum" class="modal-input" placeholder="Введите сумму" value="50">
-        <button class="main-btn" style="margin:0; width:100%" onclick="sendDeposit()">КУПИТЬ ⭐</button>
-        <p onclick="closeModal()" style="color:var(--red); margin-top:15px; font-size:14px">Отмена</p>
+        <h3 style="margin:0">Введите сумму ⭐</h3>
+        <input type="number" id="dep-sum" class="modal-input" value="100">
+        <button class="main-btn" style="margin:0; width:100%" onclick="sendDeposit()">ОПЛАТИТЬ</button>
+        <p onclick="closeModal()" style="color:red; margin-top:15px; cursor:pointer">Отмена</p>
     </div>
 </div>
 
 <div class="header">
-    <div class="balance-badge" onclick="openModal()">⭐ <span id="bal">0</span> <span class="plus">+</span></div>
-    <div style="font-weight: 800; letter-spacing: 1px;">STARS CASE</div>
+    <div class="balance-badge" onclick="openModal()">⭐ <span id="bal">0</span> <span style="color:#0088cc">+</span></div>
+    <div style="font-weight: bold; color: var(--accent);">STARS CASE</div>
 </div>
 
 <div id="tab-cases">
@@ -76,14 +59,13 @@
 </div>
 
 <div id="tab-inv" class="hidden">
-    <h3 style="padding-left: 20px;">Мои Подарки</h3>
-    <div id="inventory-list">
-        </div>
+    <h3 style="text-align:center">Инвентарь</h3>
+    <div id="inventory-list" style="padding: 20px; text-align: center; color: #666;">Тут будут ваши призы</div>
 </div>
 
 <div class="nav-bar">
-    <div class="nav-item nav-active" id="nav-1" onclick="switchTab('cases')">КЕЙСЫ</div>
-    <div class="nav-item" id="nav-2" onclick="switchTab('inv')">ИНВЕНТАРЬ</div>
+    <div class="nav-item nav-active" id="n1" onclick="switchTab('cases')">КЕЙСЫ</div>
+    <div class="nav-item" id="n2" onclick="switchTab('inv')">ИНВЕНТАРЬ</div>
 </div>
 
 <script>
@@ -94,71 +76,50 @@
     document.getElementById('bal').innerText = balance;
 
     const gifts = [
-        { id: 1, name: 'Сердце', img: '1.jpg', price: 15 },
-        { id: 2, name: 'Коробка', img: '2.jpg', price: 25 },
-        { id: 3, name: 'Роза', img: '3.jpg', price: 25 },
-        { id: 4, name: 'Торт', img: '4.jpg', price: 50 },
-        { id: 5, name: 'Мишка', img: '5.jpg', price: 50 },
-        { id: 6, name: 'Елка', img: '6.jpg', price: 50 }
+        { i: '1.jpg', p: 15 }, { i: '2.jpg', p: 25 }, { i: '3.jpg', p: 25 },
+        { i: '4.jpg', p: 50 }, { i: '5.jpg', p: 50 }, { i: '6.jpg', p: 50 }
     ];
 
-    // Отрисовка главной сетки
     const grid = document.getElementById('main-grid');
     gifts.forEach(g => {
-        grid.innerHTML += `<div class="card"><img src="${g.img}"><br><span class="price-tag">⭐ ${g.price}</span></div>`;
+        grid.innerHTML += `<div class="card"><img src="${g.i}"><br><small>⭐ ${g.p}</small></div>`;
     });
 
-    // Отрисовка ленты рулетки
     const tape = document.getElementById('tape');
-    for(let i=0; i<100; i++) {
-        const randomGift = gifts[Math.floor(Math.random() * gifts.length)];
-        tape.innerHTML += `<div class="tape-item"><img src="${randomGift.img}"></div>`;
-    }
-
-    function switchTab(type) {
-        document.getElementById('tab-cases').classList.toggle('hidden', type === 'inv');
-        document.getElementById('tab-inv').classList.toggle('hidden', type === 'cases');
-        document.getElementById('nav-1').classList.toggle('nav-active', type === 'cases');
-        document.getElementById('nav-2').classList.toggle('nav-active', type === 'inv');
-        if(type === 'inv') loadInventory();
+    for(let i=0; i<80; i++) {
+        const r = gifts[Math.floor(Math.random() * gifts.length)];
+        tape.innerHTML += `<div class="tape-item"><img src="${r.i}"></div>`;
     }
 
     function openModal() { document.getElementById('deposit-modal').style.display = 'flex'; }
     function closeModal() { document.getElementById('deposit-modal').style.display = 'none'; }
 
+    function switchTab(t) {
+        document.getElementById('tab-cases').classList.toggle('hidden', t === 'inv');
+        document.getElementById('tab-inv').classList.toggle('hidden', t === 'cases');
+        document.getElementById('n1').classList.toggle('nav-active', t === 'cases');
+        document.getElementById('n2').classList.toggle('nav-active', t === 'inv');
+    }
+
     function sendDeposit() {
-        const amount = document.getElementById('dep-sum').value;
-        if(amount > 0) {
-            tg.sendData(JSON.stringify({action: 'deposit', amount: parseInt(amount)}));
+        const val = document.getElementById('dep-sum').value;
+        if(val > 0) {
+            tg.sendData(JSON.stringify({action: 'deposit', amount: parseInt(val)}));
             closeModal();
         }
     }
 
     function startSpin() {
-        if(parseInt(balance) < 5) { tg.showAlert("Недостаточно звезд!"); return; }
+        if(parseInt(balance) < 5) { tg.showAlert("Мало звезд!"); return; }
         const btn = document.getElementById('spin-btn');
         btn.disabled = true;
-        const offset = 80 * 110 - (window.innerWidth / 2 - 55);
-        tape.style.transform = `translateX(-${offset}px)`;
-        
+        const move = 65 * 110 - (window.innerWidth / 2 - 55);
+        tape.style.transform = `translateX(-${move}px)`;
         setTimeout(() => {
             tg.sendData(JSON.stringify({action: 'spin'}));
             setTimeout(() => tg.close(), 1000);
         }, 5500);
     }
-
-    function loadInventory() {
-        // В реальном приложении данные берутся из БД через бота.
-        // Здесь мы просто показываем, как это будет выглядеть.
-        const invContainer = document.getElementById('inventory-list');
-        invContainer.innerHTML = '<p style="text-align:center; color:#666">Загрузка предметов из бота...</p>';
-        
-        // Отправляем запрос боту на получение списка вещей
-        tg.sendData(JSON.stringify({action: 'get_inventory'}));
-    }
-
-    function sellItem(id) { tg.sendData(JSON.stringify({action: 'sell', id: id})); tg.close(); }
-    function withdrawItem(id) { tg.sendData(JSON.stringify({action: 'withdraw', id: id})); tg.close(); }
 </script>
 </body>
 </html>
