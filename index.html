@@ -6,52 +6,64 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root { --bg: #121212; --card: #1e1e1e; --accent: #ffd700; --blue: #0088cc; }
-        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; overflow-x: hidden; }
-
+        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; overflow: hidden; height: 100vh; }
         .header { display: flex; justify-content: space-between; padding: 15px 20px; align-items: center; }
-        .balance-badge { background: rgba(255,255,255,0.07); padding: 6px 15px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-weight: bold; }
-        
+        .balance-badge { background: rgba(255,255,255,0.07); padding: 6px 15px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-weight: bold; cursor: pointer; }
+        .plus { background: var(--blue); width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+
         /* Рулетка */
         .roulette-container { position: relative; width: 100%; height: 140px; background: #181818; margin: 20px 0; overflow: hidden; border-top: 1px solid #333; border-bottom: 1px solid #333; }
         .pointer { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 3px; height: 100%; background: white; z-index: 10; box-shadow: 0 0 10px #fff; }
-        .tape { display: flex; position: absolute; left: 0; height: 100%; will-change: transform; }
-        .tape-item { min-width: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .tape { display: flex; position: absolute; left: 0; height: 100%; }
+        .tape-item { min-width: 120px; display: flex; justify-content: center; align-items: center; }
         .tape-item img { width: 85px; height: 85px; object-fit: contain; }
 
-        /* Сетка подарков */
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; margin-bottom: 80px; }
+        /* Сетка */
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; }
         .card { background: var(--card); border-radius: 15px; padding: 15px; text-align: center; border: 1px solid #2a2a2a; }
-        .card img { width: 65px; height: 65px; margin-bottom: 8px; }
-        .price { background: rgba(255,215,0,0.1); color: var(--accent); padding: 4px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; }
+        .card img { width: 60px; height: 60px; margin-bottom: 8px; }
+        .price { background: rgba(255,215,0,0.1); color: var(--accent); padding: 4px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
 
         .main-btn { background: var(--blue); color: white; border: none; width: 90%; padding: 16px; border-radius: 15px; font-size: 18px; font-weight: bold; margin: 0 5% 20px 5%; }
         
+        /* Навигация */
         .nav { position: fixed; bottom: 0; width: 100%; background: #181818; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #333; }
-        .nav-item { color: #666; font-size: 11px; font-weight: bold; text-align: center; }
+        .nav-item { color: #666; font-size: 11px; font-weight: bold; text-align: center; transition: 0.2s; }
         .nav-item.active { color: white; }
+        .nav-item span { display: block; font-size: 20px; margin-bottom: 4px; }
+
+        #inventory-content { display: none; padding: 20px; text-align: center; color: #888; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
-
     <audio id="tick-sound" src="https://www.soundjay.com/buttons/button-50.mp3" preload="auto"></audio>
 
     <div class="header">
-        <div class="balance-badge">⭐ <span id="balance-val">0</span></div>
+        <div class="balance-badge" onclick="openDeposit()">⭐ <span id="balance-val">0</span> <div class="plus">+</div></div>
         <div style="font-weight: bold;">Stars Case</div>
     </div>
 
-    <div class="roulette-container">
-        <div class="pointer"></div>
-        <div class="tape" id="tape"></div>
+    <div id="cases-tab">
+        <div class="roulette-container">
+            <div class="pointer"></div>
+            <div class="tape" id="tape"></div>
+        </div>
+        <button class="main-btn" id="spin-btn" onclick="spin()">ОТКРЫТЬ 5 ⭐</button>
+        <div class="grid" id="grid"></div>
     </div>
 
-    <button class="main-btn" id="spin-btn" onclick="spin()">ОТКРЫТЬ 5 ⭐</button>
-
-    <div class="grid" id="grid"></div>
+    <div id="inventory-tab" class="hidden">
+        <div id="inventory-content">
+            <img src="https://static.ok.ru/static/stickers/v2/4/6474/3.png" style="width: 100px; opacity: 0.3;">
+            <p>Ваш инвентарь пуст.<br>Откройте кейс, чтобы выбить призы!</p>
+            <button class="main-btn" style="background: #333;" onclick="tg.close()">Смотреть в чате</button>
+        </div>
+    </div>
 
     <div class="nav">
-        <div class="nav-item active">📦 КЕЙСЫ</div>
-        <div class="nav-item">🎒 ИНВЕНТАРЬ</div>
+        <div class="nav-item active" onclick="switchTab('cases', this)"><span>📦</span>КЕЙСЫ</div>
+        <div class="nav-item" onclick="switchTab('inv', this)"><span>🎒</span>ИНВЕНТАРЬ</div>
     </div>
 
     <script>
@@ -62,7 +74,6 @@
         let balance = parseInt(urlParams.get('balance')) || 0;
         document.getElementById('balance-val').innerText = balance;
 
-        // Красивые картинки (3D Telegram Style)
         const giftList = [
             { name: 'Tree', img: 'https://static.ok.ru/static/stickers/v2/4/6474/10.png', price: 50 },
             { name: 'Heart', img: 'https://static.ok.ru/static/stickers/v2/4/6474/2.png', price: 15 },
@@ -72,13 +83,11 @@
             { name: 'Cake', img: 'https://static.ok.ru/static/stickers/v2/4/6474/5.png', price: 50 }
         ];
 
-        // Рисуем сетку
         const grid = document.getElementById('grid');
         giftList.forEach(g => {
             grid.innerHTML += `<div class="card"><img src="${g.img}"><br><span class="price">⭐ ${g.price}</span></div>`;
         });
 
-        // Рисуем ленту
         const tape = document.getElementById('tape');
         const itemWidth = 120;
         for(let i=0; i<80; i++) {
@@ -86,57 +95,60 @@
             tape.innerHTML += `<div class="tape-item"><img src="${g.img}"></div>`;
         }
 
+        function switchTab(tab, el) {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+            if(tab === 'inv') {
+                document.getElementById('cases-tab').classList.add('hidden');
+                document.getElementById('inventory-tab').classList.remove('hidden');
+                document.getElementById('inventory-content').style.display = 'block';
+            } else {
+                document.getElementById('cases-tab').classList.remove('hidden');
+                document.getElementById('inventory-tab').classList.add('hidden');
+            }
+        }
+
+        function openDeposit() {
+            tg.showPopup({
+                title: 'Пополнение',
+                message: 'Выберите сумму пополнения:',
+                buttons: [
+                    {id: '10', type: 'default', text: '10 ⭐'},
+                    {id: '50', type: 'default', text: '50 ⭐'},
+                    {id: 'cancel', type: 'destructive', text: 'Отмена'}
+                ]
+            }, (id) => {
+                if(id !== 'cancel') tg.sendData(JSON.stringify({action: 'deposit', amount: id}));
+            });
+        }
+
         const tickSound = document.getElementById('tick-sound');
         let lastTickIdx = -1;
 
-        function playTick() {
-            tickSound.currentTime = 0;
-            tickSound.play().catch(() => {});
-            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-        }
-
         function spin() {
-            if (balance < 5) {
-                tg.showAlert("Недостаточно звезд! ❌");
-                return;
-            }
-
-            const btn = document.getElementById('spin-btn');
-            btn.disabled = true;
-
-            const winIdx = 65; 
-            const stopPos = (winIdx * itemWidth) - (window.innerWidth / 2 - itemWidth / 2);
-            
-            let startTime = null;
-            const duration = 5000; // 5 секунд прокрутки
-
-            function step(timestamp) {
-                if (!startTime) startTime = timestamp;
-                const progress = Math.min((timestamp - startTime) / duration, 1);
-                
-                // Эффект замедления
-                const easeOut = 1 - Math.pow(1 - progress, 4);
-                const currentPos = easeOut * stopPos;
-                
+            if (balance < 5) { tg.showAlert("Недостаточно звезд!"); return; }
+            document.getElementById('spin-btn').disabled = true;
+            const stopPos = (65 * itemWidth) - (window.innerWidth / 2 - itemWidth / 2);
+            let start = null;
+            function step(ts) {
+                if(!start) start = ts;
+                let progress = Math.min((ts - start) / 5000, 1);
+                let currentPos = (1 - Math.pow(1 - progress, 4)) * stopPos;
                 tape.style.transform = `translateX(-${currentPos}px)`;
-
-                // Звук при прохождении каждого предмета
-                const currentTickIdx = Math.floor((currentPos + window.innerWidth/2) / itemWidth);
-                if (currentTickIdx !== lastTickIdx) {
-                    playTick();
-                    lastTickIdx = currentTickIdx;
+                let tickIdx = Math.floor((currentPos + window.innerWidth/2) / itemWidth);
+                if(tickIdx !== lastTickIdx) {
+                    tickSound.currentTime = 0; tickSound.play().catch(()=>{});
+                    if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+                    lastTickIdx = tickIdx;
                 }
-
-                if (progress < 1) {
-                    window.requestAnimationFrame(step);
-                } else {
+                if(progress < 1) window.requestAnimationFrame(step);
+                else {
                     setTimeout(() => {
-                        tg.sendData(JSON.stringify({ action: 'spin', price: 5 }));
+                        tg.sendData(JSON.stringify({action:'spin'}));
                         setTimeout(() => tg.close(), 500);
-                    }, 800);
+                    }, 1000);
                 }
             }
-
             window.requestAnimationFrame(step);
         }
     </script>
