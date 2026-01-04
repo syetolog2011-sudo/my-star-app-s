@@ -11,29 +11,26 @@
         .balance-badge { background: rgba(255,255,255,0.07); padding: 6px 15px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-weight: bold; cursor: pointer; }
         .plus { background: var(--blue); width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
 
-        /* Рулетка */
         .roulette-container { position: relative; width: 100%; height: 140px; background: #181818; margin: 20px 0; overflow: hidden; border-top: 1px solid #333; border-bottom: 1px solid #333; }
         .pointer { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 3px; height: 100%; background: white; z-index: 10; box-shadow: 0 0 10px #fff; }
         .tape { display: flex; position: absolute; left: 0; height: 100%; }
-        .tape-item { min-width: 120px; display: flex; justify-content: center; align-items: center; }
-        .tape-item img { width: 85px; height: 85px; object-fit: contain; }
+        .tape-item { min-width: 120px; display: flex; justify-content: center; align-items: center; font-size: 50px; }
 
-        /* Сетка */
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; }
         .card { background: var(--card); border-radius: 15px; padding: 15px; text-align: center; border: 1px solid #2a2a2a; }
-        .card img { width: 60px; height: 60px; margin-bottom: 8px; }
+        .card div { font-size: 40px; margin-bottom: 8px; }
         .price { background: rgba(255,215,0,0.1); color: var(--accent); padding: 4px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
 
         .main-btn { background: var(--blue); color: white; border: none; width: 90%; padding: 16px; border-radius: 15px; font-size: 18px; font-weight: bold; margin: 0 5% 20px 5%; }
         
-        /* Навигация */
         .nav { position: fixed; bottom: 0; width: 100%; background: #181818; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #333; }
-        .nav-item { color: #666; font-size: 11px; font-weight: bold; text-align: center; transition: 0.2s; }
+        .nav-item { color: #666; font-size: 11px; font-weight: bold; text-align: center; }
         .nav-item.active { color: white; }
-        .nav-item span { display: block; font-size: 20px; margin-bottom: 4px; }
-
-        #inventory-content { display: none; padding: 20px; text-align: center; color: #888; }
         .hidden { display: none; }
+        
+        #inventory-list { padding: 15px; }
+        .inv-item { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .withdraw-btn { background: #28a745; border: none; color: white; padding: 8px 15px; border-radius: 8px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -54,100 +51,76 @@
     </div>
 
     <div id="inventory-tab" class="hidden">
-        <div id="inventory-content">
-            <img src="https://static.ok.ru/static/stickers/v2/4/6474/3.png" style="width: 100px; opacity: 0.3;">
-            <p>Ваш инвентарь пуст.<br>Откройте кейс, чтобы выбить призы!</p>
-            <button class="main-btn" style="background: #333;" onclick="tg.close()">Смотреть в чате</button>
+        <div id="inventory-list">
+            <p style="text-align:center; color:#666;">Загрузка инвентаря...</p>
         </div>
     </div>
 
     <div class="nav">
-        <div class="nav-item active" onclick="switchTab('cases', this)"><span>📦</span>КЕЙСЫ</div>
-        <div class="nav-item" onclick="switchTab('inv', this)"><span>🎒</span>ИНВЕНТАРЬ</div>
+        <div class="nav-item active" onclick="switchTab('cases', this)">КЕЙСЫ</div>
+        <div class="nav-item" onclick="switchTab('inv', this)">ИНВЕНТАРЬ</div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const urlParams = new URLSearchParams(window.location.search);
-        let balance = parseInt(urlParams.get('balance')) || 0;
+        const balance = new URLSearchParams(window.location.search).get('balance') || 0;
         document.getElementById('balance-val').innerText = balance;
 
-        const giftList = [
-            { name: 'Tree', img: 'https://static.ok.ru/static/stickers/v2/4/6474/10.png', price: 50 },
-            { name: 'Heart', img: 'https://static.ok.ru/static/stickers/v2/4/6474/2.png', price: 15 },
-            { name: 'Bear', img: 'https://static.ok.ru/static/stickers/v2/4/6474/1.png', price: 50 },
-            { name: 'Box', img: 'https://static.ok.ru/static/stickers/v2/4/6474/3.png', price: 25 },
-            { name: 'Rose', img: 'https://static.ok.ru/static/stickers/v2/4/6474/11.png', price: 25 },
-            { name: 'Cake', img: 'https://static.ok.ru/static/stickers/v2/4/6474/5.png', price: 50 }
+        const gifts = [
+            { n: 'Tree', i: '🎄', p: 50 }, { n: 'Heart', i: '💖', p: 15 },
+            { n: 'Bear', i: '🧸', p: 50 }, { n: 'Box', i: '🎁', p: 25 },
+            { n: 'Rose', i: '🌹', p: 25 }, { n: 'Cake', i: '🎂', p: 50 }
         ];
 
         const grid = document.getElementById('grid');
-        giftList.forEach(g => {
-            grid.innerHTML += `<div class="card"><img src="${g.img}"><br><span class="price">⭐ ${g.price}</span></div>`;
+        gifts.forEach(g => {
+            grid.innerHTML += `<div class="card"><div>${g.i}</div><span class="price">⭐ ${g.p}</span></div>`;
         });
 
         const tape = document.getElementById('tape');
-        const itemWidth = 120;
         for(let i=0; i<80; i++) {
-            const g = giftList[Math.floor(Math.random() * giftList.length)];
-            tape.innerHTML += `<div class="tape-item"><img src="${g.img}"></div>`;
+            const g = gifts[Math.floor(Math.random() * gifts.length)];
+            tape.innerHTML += `<div class="tape-item">${g.i}</div>`;
         }
 
         function switchTab(tab, el) {
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             el.classList.add('active');
+            document.getElementById('cases-tab').classList.toggle('hidden', tab === 'inv');
+            document.getElementById('inventory-tab').classList.toggle('hidden', tab === 'cases');
             if(tab === 'inv') {
-                document.getElementById('cases-tab').classList.add('hidden');
-                document.getElementById('inventory-tab').classList.remove('hidden');
-                document.getElementById('inventory-content').style.display = 'block';
-            } else {
-                document.getElementById('cases-tab').classList.remove('hidden');
-                document.getElementById('inventory-tab').classList.add('hidden');
+                // В демо-версии просто показываем кнопку закрытия для просмотра в чате
+                document.getElementById('inventory-list').innerHTML = `
+                    <div class="inv-item"><span>🎁 Выигрыш</span><button class="withdraw-btn" onclick="withdraw()">ВЫВОД</button></div>
+                    <p style="font-size:12px; color:#666; text-align:center;">Нажмите Вывод, чтобы отправить запрос админу</p>
+                `;
             }
         }
 
         function openDeposit() {
-            tg.showPopup({
-                title: 'Пополнение',
-                message: 'Выберите сумму пополнения:',
-                buttons: [
-                    {id: '10', type: 'default', text: '10 ⭐'},
-                    {id: '50', type: 'default', text: '50 ⭐'},
-                    {id: 'cancel', type: 'destructive', text: 'Отмена'}
-                ]
-            }, (id) => {
-                if(id !== 'cancel') tg.sendData(JSON.stringify({action: 'deposit', amount: id}));
-            });
+            tg.showPopup({title:'Пополнение', message:'Сумма:', buttons:[{id:'10',text:'10 ⭐'},{id:'50',text:'50 ⭐'},{id:'c',type:'destructive',text:'Отмена'}]}, 
+            (id)=>{ if(id!=='c') tg.sendData(JSON.stringify({action:'deposit', amount:id})); });
         }
 
-        const tickSound = document.getElementById('tick-sound');
-        let lastTickIdx = -1;
+        function withdraw() {
+            tg.sendData(JSON.stringify({action: 'withdraw_request'}));
+            tg.close();
+        }
 
         function spin() {
-            if (balance < 5) { tg.showAlert("Недостаточно звезд!"); return; }
+            if (parseInt(balance) < 5) { tg.showAlert("Мало звезд!"); return; }
             document.getElementById('spin-btn').disabled = true;
-            const stopPos = (65 * itemWidth) - (window.innerWidth / 2 - itemWidth / 2);
+            const stopPos = (65 * 120) - (window.innerWidth / 2 - 60);
             let start = null;
             function step(ts) {
                 if(!start) start = ts;
                 let progress = Math.min((ts - start) / 5000, 1);
                 let currentPos = (1 - Math.pow(1 - progress, 4)) * stopPos;
                 tape.style.transform = `translateX(-${currentPos}px)`;
-                let tickIdx = Math.floor((currentPos + window.innerWidth/2) / itemWidth);
-                if(tickIdx !== lastTickIdx) {
-                    tickSound.currentTime = 0; tickSound.play().catch(()=>{});
-                    if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-                    lastTickIdx = tickIdx;
-                }
                 if(progress < 1) window.requestAnimationFrame(step);
-                else {
-                    setTimeout(() => {
-                        tg.sendData(JSON.stringify({action:'spin'}));
-                        setTimeout(() => tg.close(), 500);
-                    }, 1000);
-                }
+                else { tg.sendData(JSON.stringify({action:'spin'})); setTimeout(()=>tg.close(), 1000); }
             }
             window.requestAnimationFrame(step);
         }
