@@ -6,7 +6,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root { --bg: #121212; --card: #1e1e1e; --accent: #ffd700; --blue: #0088cc; }
-        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; overflow: hidden; }
+        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; overflow-x: hidden; }
 
         .header { display: flex; justify-content: space-between; padding: 15px 20px; align-items: center; }
         .balance-badge { background: rgba(255,255,255,0.07); padding: 6px 15px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-weight: bold; }
@@ -16,18 +16,18 @@
         .pointer { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 3px; height: 100%; background: white; z-index: 10; box-shadow: 0 0 10px #fff; }
         .tape { display: flex; position: absolute; left: 0; height: 100%; will-change: transform; }
         .tape-item { min-width: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .tape-item img { width: 80px; height: 80px; object-fit: contain; }
+        .tape-item img { width: 85px; height: 85px; object-fit: contain; }
 
+        /* Сетка подарков */
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; margin-bottom: 80px; }
         .card { background: var(--card); border-radius: 15px; padding: 15px; text-align: center; border: 1px solid #2a2a2a; }
-        .card img { width: 60px; height: 60px; margin-bottom: 8px; }
+        .card img { width: 65px; height: 65px; margin-bottom: 8px; }
         .price { background: rgba(255,215,0,0.1); color: var(--accent); padding: 4px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; }
 
-        .main-btn { background: var(--blue); color: white; border: none; width: 90%; padding: 16px; border-radius: 15px; font-size: 18px; font-weight: bold; margin: 0 5% 20px 5%; transition: 0.3s; }
-        .main-btn:disabled { opacity: 0.5; }
-
+        .main-btn { background: var(--blue); color: white; border: none; width: 90%; padding: 16px; border-radius: 15px; font-size: 18px; font-weight: bold; margin: 0 5% 20px 5%; }
+        
         .nav { position: fixed; bottom: 0; width: 100%; background: #181818; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #333; }
-        .nav-item { color: #666; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .nav-item { color: #666; font-size: 11px; font-weight: bold; text-align: center; }
         .nav-item.active { color: white; }
     </style>
 </head>
@@ -62,6 +62,7 @@
         let balance = parseInt(urlParams.get('balance')) || 0;
         document.getElementById('balance-val').innerText = balance;
 
+        // Красивые картинки (3D Telegram Style)
         const giftList = [
             { name: 'Tree', img: 'https://static.ok.ru/static/stickers/v2/4/6474/10.png', price: 50 },
             { name: 'Heart', img: 'https://static.ok.ru/static/stickers/v2/4/6474/2.png', price: 15 },
@@ -71,13 +72,13 @@
             { name: 'Cake', img: 'https://static.ok.ru/static/stickers/v2/4/6474/5.png', price: 50 }
         ];
 
-        // Рендер сетки
+        // Рисуем сетку
         const grid = document.getElementById('grid');
         giftList.forEach(g => {
             grid.innerHTML += `<div class="card"><img src="${g.img}"><br><span class="price">⭐ ${g.price}</span></div>`;
         });
 
-        // Рендер рулетки
+        // Рисуем ленту
         const tape = document.getElementById('tape');
         const itemWidth = 120;
         for(let i=0; i<80; i++) {
@@ -89,10 +90,9 @@
         let lastTickIdx = -1;
 
         function playTick() {
-            // Сбрасываем звук в начало, чтобы он мог играть быстро
             tickSound.currentTime = 0;
-            tickSound.play().catch(() => {}); // Игнорируем ошибки автоплея
-            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); // Вибрация
+            tickSound.play().catch(() => {});
+            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         }
 
         function spin() {
@@ -104,19 +104,18 @@
             const btn = document.getElementById('spin-btn');
             btn.disabled = true;
 
-            const winIdx = 60; 
+            const winIdx = 65; 
             const stopPos = (winIdx * itemWidth) - (window.innerWidth / 2 - itemWidth / 2);
             
-            // Настройка анимации через JS для отслеживания звука
-            const startTime = performance.now();
-            const duration = 5000; // 5 секунд
+            let startTime = null;
+            const duration = 5000; // 5 секунд прокрутки
 
-            function animate(currentTime) {
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
+            function step(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const progress = Math.min((timestamp - startTime) / duration, 1);
                 
-                // Функция плавности (Ease Out Cubic)
-                const easeOut = 1 - Math.pow(1 - progress, 3);
+                // Эффект замедления
+                const easeOut = 1 - Math.pow(1 - progress, 4);
                 const currentPos = easeOut * stopPos;
                 
                 tape.style.transform = `translateX(-${currentPos}px)`;
@@ -129,17 +128,16 @@
                 }
 
                 if (progress < 1) {
-                    requestAnimationFrame(animate);
+                    window.requestAnimationFrame(step);
                 } else {
-                    // Конец анимации
                     setTimeout(() => {
                         tg.sendData(JSON.stringify({ action: 'spin', price: 5 }));
                         setTimeout(() => tg.close(), 500);
-                    }, 500);
+                    }, 800);
                 }
             }
 
-            requestAnimationFrame(animate);
+            window.requestAnimationFrame(step);
         }
     </script>
 </body>
