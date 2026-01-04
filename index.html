@@ -2,107 +2,142 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stars Case Hub</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --bg: #0d0d0d; --card: #1a1a1a; --blue: #0088cc; }
-        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; padding-bottom: 70px; overflow: hidden; }
-        .header { display: flex; justify-content: space-between; padding: 15px; align-items: center; }
-        .bal { background: #222; padding: 8px 15px; border-radius: 20px; border: 1px solid #333; font-weight: bold; cursor: pointer; }
-        
-        /* Модалка пополнения */
-        #modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 100; }
-        .modal-cnt { background: var(--card); padding: 20px; border-radius: 15px; width: 70%; text-align: center; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 10px; border: none; text-align: center; }
-
-        .roulette { position: relative; width: 100%; height: 120px; background: #111; margin: 20px 0; overflow: hidden; border-y: 1px solid #333; }
-        .line { position: absolute; left: 50%; width: 2px; height: 100%; background: red; z-index: 10; }
-        .tape { display: flex; position: absolute; transition: 5s cubic-bezier(0.1, 0, 0.1, 1); }
-        .item { min-width: 100px; height: 120px; display: flex; align-items: center; justify-content: center; }
-        .item img { width: 70px; }
-
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; }
-        .gift-card { background: var(--card); padding: 10px; border-radius: 10px; text-align: center; font-size: 12px; }
-        .gift-card img { width: 40px; }
-
-        .btn { background: var(--blue); color: white; border: none; width: 90%; padding: 15px; border-radius: 12px; font-weight: bold; margin: 0 5%; }
-        .nav { position: fixed; bottom: 0; width: 100%; background: #111; display: flex; justify-content: space-around; padding: 15px 0; }
-        .hidden { display: none; }
+        body {
+            font-family: sans-serif;
+            background: #1a1a1a;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .balance-box {
+            background: #333;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .case-area {
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #555;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        #result-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffaa00;
+        }
+        button {
+            background: #0088cc;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        #collect-btn {
+            background: #28a745;
+            display: none;
+        }
+        .deposit-section {
+            margin-top: 30px;
+            border-top: 1px solid #444;
+            padding-top: 20px;
+        }
+        input {
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            width: 60%;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
 
-<div id="modal">
-    <div class="modal-cnt">
-        <b>Сумма пополнения</b>
-        <input type="number" id="sum" value="50">
-        <button class="btn" onclick="buy()">КУПИТЬ ⭐</button>
-        <p onclick="closeM()" style="font-size:12px; color:gray">Отмена</p>
+    <div class="balance-box">
+        💰 Твой баланс: <span id="balance">0</span> ⭐
     </div>
-</div>
 
-<div class="header">
-    <div class="bal" onclick="openM()">⭐ <span id="balance">0</span> +</div>
-    <b>STARS CASE</b>
-</div>
-
-<div id="p-cases">
-    <div class="roulette">
-        <div class="line"></div>
-        <div class="tape" id="tape"></div>
+    <div class="case-area">
+        <div id="result-text">Нажми "Крутить"</div>
     </div>
-    <button class="btn" id="go" onclick="spin()">ОТКРЫТЬ ЗА 5 ⭐</button>
-    <div class="grid" id="grid"></div>
-</div>
 
-<div id="p-inv" class="hidden" style="text-align:center; padding-top:50px;">
-    Тут будет твой инвентарь
-</div>
+    <button id="spin-btn" onclick="spin()">КРУТИТЬ КЕЙС (10 ⭐)</button>
+    <button id="collect-btn" onclick="collect()">ЗАБРАТЬ ПРИЗ</button>
 
-<div class="nav">
-    <div onclick="tab('cases')">КЕЙСЫ</div>
-    <div onclick="tab('inv')">ИНВЕНТАРЬ</div>
-</div>
+    <div class="deposit-section">
+        <h3>Пополнить баланс</h3>
+        <input type="number" id="amount" placeholder="Кол-во звезд">
+        <button style="background: #6c5ce7;" onclick="deposit()">ПОДТВЕРДИТЬ</button>
+    </div>
 
-<script>
-    const tg = window.Telegram.WebApp;
-    let b = new URLSearchParams(location.search).get('balance') || 0;
-    document.getElementById('balance').innerText = b;
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
 
-    const items = ['0.jpg','1.jpg','2.jpg','3.jpg','4.jpg','5.jpg','6.jpg'];
-    const tape = document.getElementById('tape');
-    const grid = document.getElementById('grid');
+        // Получаем баланс из ссылки (URL)
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentBalance = parseInt(urlParams.get('balance')) || 0;
+        document.getElementById('balance').innerText = currentBalance;
 
-    // Наполняем ленту
-    for(let i=0; i<100; i++) {
-        let img = items[Math.floor(Math.random()*items.length)];
-        tape.innerHTML += `<div class="item"><img src="${img}"></div>`;
-    }
-    // Наполняем витрину
-    items.slice(1).forEach(i => grid.innerHTML += `<div class="gift-card"><img src="${i}"><br>⭐ 50</div>`);
+        let lastPrize = "";
 
-    function openM() { document.getElementById('modal').style.display='flex'; }
-    function closeM() { document.getElementById('modal').style.display='none'; }
-    
-    function tab(t) {
-        document.getElementById('p-cases').classList.toggle('hidden', t==='inv');
-        document.getElementById('p-inv').classList.toggle('hidden', t==='cases');
-    }
+        function spin() {
+            if (currentBalance < 10) {
+                alert("Недостаточно звезд!");
+                return;
+            }
 
-    function buy() {
-        let s = document.getElementById('sum').value;
-        tg.sendData(JSON.stringify({action:'deposit', amount:s}));
-    }
+            document.getElementById('spin-btn').disabled = true;
+            document.getElementById('result-text').innerText = "Крутим...";
+            
+            // Настройка шансов (Честный рандом)
+            let chance = Math.random() * 100;
+            if (chance < 70) {
+                lastPrize = "Ничего ❌";
+            } else if (chance < 95) {
+                lastPrize = "10 Звезд ⭐";
+            } else {
+                lastPrize = "50 Звезд 🔥";
+            }
 
-    function spin() {
-        if(b < 5) return tg.showAlert("Мало звезд!");
-        document.getElementById('go').disabled = true;
-        tape.style.transform = `translateX(-${8000}px)`; // Крутим ленту
-        setTimeout(() => {
-            tg.sendData(JSON.stringify({action:'spin'}));
-            setTimeout(() => tg.close(), 500);
-        }, 5500);
-    }
-</script>
+            // Имитация анимации (3 секунды)
+            setTimeout(() => {
+                document.getElementById('result-text').innerText = "ВЫПАЛО: " + lastPrize;
+                document.getElementById('collect-btn').style.display = "block";
+                document.getElementById('spin-btn').style.display = "none";
+            }, 3000);
+        }
+
+        function collect() {
+            // Отправляем данные боту (после этого приложение закроется)
+            tg.sendData(JSON.stringify({
+                action: 'item_won',
+                item: lastPrize
+            }));
+        }
+
+        function deposit() {
+            let amt = document.getElementById('amount').value;
+            if (amt > 0) {
+                tg.sendData(JSON.stringify({
+                    action: 'deposit',
+                    amount: amt
+                }));
+            }
+        }
+    </script>
 </body>
 </html>
