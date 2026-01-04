@@ -1,211 +1,58 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NFT Case Stars</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* Основной фон (градиент как на твоем скриншоте) */
         body {
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #cf208e 0%, #7e38cc 35%, #2a8af0 70%, #20dbd1 100%);
-            background-attachment: fixed;
-            height: 100vh;
-            color: white;
-            font-family: 'Segoe UI', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            overflow-x: hidden;
+            background: linear-gradient(135deg, #cf208e, #20dbd1);
+            color: white; font-family: sans-serif; text-align: center;
+            height: 100vh; margin: 0; display: flex; flex-direction: column; align-items: center;
         }
-
-        /* Заголовок и баланс */
-        .header {
-            width: 90%;
-            padding: 20px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .balance-badge {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 8px 15px;
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            font-weight: bold;
-        }
-
-        /* Сетка кейсов */
-        .cases-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            width: 90%;
-            margin-top: 10px;
-            margin-bottom: 100px;
-        }
-
-        /* Карточка кейса (эффект стекла) */
         .case-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 25px;
-            padding: 20px;
-            text-align: center;
-            transition: transform 0.2s;
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            border-radius: 20px; padding: 20px; margin: 20px; width: 80%;
+            border: 1px solid rgba(255,255,255,0.2);
         }
-
-        .case-card:active {
-            transform: scale(0.95);
-        }
-
-        .case-card img {
-            width: 100%;
-            max-width: 100px;
-            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
-            margin-bottom: 10px;
-        }
-
-        .case-title {
-            font-size: 0.9rem;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .case-price {
-            color: #ffd700;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
-
-        .buy-btn {
-            background: #0088cc;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 12px;
-            font-weight: bold;
-            width: 100%;
-            cursor: pointer;
-        }
-
-        /* Нижнее меню */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            height: 75px;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(20px);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-size: 10px;
-            opacity: 0.6;
-            color: white;
-            text-decoration: none;
-        }
-
-        .nav-item.active {
-            opacity: 1;
-            color: #0088cc;
-        }
-
-        .nav-icon {
-            font-size: 24px;
-            margin-bottom: 4px;
-        }
-
-        /* Анимация тряски */
-        @keyframes shake {
-            0% { transform: rotate(0deg); }
-            25% { transform: rotate(5deg); }
-            50% { transform: rotate(-5deg); }
-            75% { transform: rotate(5deg); }
-            100% { transform: rotate(0deg); }
+        button {
+            background: #0088cc; color: white; border: none;
+            padding: 10px 20px; border-radius: 10px; font-weight: bold;
         }
     </style>
 </head>
 <body>
-
-    <div class="header">
-        <div style="font-size: 1.2rem; font-weight: bold;">CASE STARS</div>
-        <div class="balance-badge">NFT SHOP</div>
+    <h1>NFT CASES</h1>
+    
+    <div class="case-card">
+        <h3>STARTER CASE</h3>
+        <p>Цена: 5 ⭐️</p>
+        <button onclick="sendBuy(5, 'STARTER CASE')">КУПИТЬ</button>
     </div>
 
-    <div class="cases-grid" id="main-grid">
-        <div class="case-card" onclick="startPurchase(5, 'STARTER CASE')">
-            <img src="https://cdn-icons-png.flaticon.com/512/6584/6584942.png" id="img-1">
-            <div class="case-title">STARTER</div>
-            <div class="case-price">5 ⭐️</div>
-            <button class="buy-btn">ОТКРЫТЬ</button>
-        </div>
-
-        <div class="case-card" onclick="startPurchase(15, 'RARE CASE')">
-            <img src="https://cdn-icons-png.flaticon.com/512/4222/4222031.png" id="img-2">
-            <div class="case-title">RARE</div>
-            <div class="case-price">15 ⭐️</div>
-            <button class="buy-btn">ОТКРЫТЬ</button>
-        </div>
-    </div>
-
-    <div class="bottom-nav">
-        <div class="nav-item">
-            <span class="nav-icon">🎒</span>
-            ИНВЕНТАРЬ
-        </div>
-        <div class="nav-item active">
-            <span class="nav-icon">🎮</span>
-            КЕЙСЫ
-        </div>
-        <div class="nav-item">
-            <span class="nav-icon">👤</span>
-            ПРОФИЛЬ
-        </div>
+    <div class="case-card">
+        <h3>RARE CASE</h3>
+        <p>Цена: 15 ⭐️</p>
+        <button onclick="sendBuy(15, 'RARE CASE')">КУПИТЬ</button>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        tg.ready();
 
-        function startPurchase(price, name) {
-            // Эффект нажатия
-            const haptic = tg.HapticFeedback;
-            haptic.impactOccurred('medium');
-
-            // Отправляем данные боту
-            const data = {
+        function sendBuy(price, name) {
+            // Создаем объект с данными
+            const data = JSON.stringify({
                 action: 'open_case',
                 price: price,
                 item_name: name
-            };
-            
-            tg.sendData(JSON.stringify(data));
-            
-            // Закрываем окно, чтобы пользователь увидел инвойс от бота
-            setTimeout(() => {
-                tg.close();
-            }, 500);
-        }
+            });
 
-        // Настройка главной кнопки Telegram (внизу)
-        tg.MainButton.setText("ЗАКРЫТЬ МАГАЗИН");
-        tg.MainButton.show();
-        tg.MainButton.onClick(() => {
+            // ОТПРАВЛЯЕМ БОТУ
+            tg.sendData(data);
+            
+            // ЗАКРЫВАЕМ ПРИЛОЖЕНИЕ (чтобы увидеть счет в чате)
             tg.close();
-        });
+        }
     </script>
 </body>
 </html>
