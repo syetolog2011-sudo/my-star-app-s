@@ -5,135 +5,102 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --bg: #0f0f0f; --card: #1a1a1a; --accent: #ffd700; --blue: #0088cc; --red: #ff4444; }
-        body { background: var(--bg); color: white; font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 80px; overflow-x: hidden; }
+        :root { --bg: #0d0d0d; --card: #1a1a1a; --blue: #0088cc; }
+        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; padding-bottom: 70px; overflow: hidden; }
+        .header { display: flex; justify-content: space-between; padding: 15px; align-items: center; }
+        .bal { background: #222; padding: 8px 15px; border-radius: 20px; border: 1px solid #333; font-weight: bold; cursor: pointer; }
         
-        .header { display: flex; justify-content: space-between; padding: 15px 20px; align-items: center; }
-        .balance-badge { background: rgba(255,255,255,0.07); padding: 8px 16px; border-radius: 25px; display: flex; align-items: center; gap: 8px; font-weight: bold; border: 1px solid #333; cursor: pointer; }
+        /* Модалка пополнения */
+        #modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 100; }
+        .modal-cnt { background: var(--card); padding: 20px; border-radius: 15px; width: 70%; text-align: center; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 10px; border: none; text-align: center; }
 
-        /* Окно ввода суммы */
-        #deposit-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 100; }
-        .modal-box { background: var(--card); padding: 25px; border-radius: 20px; width: 80%; text-align: center; border: 1px solid #333; }
-        .modal-input { width: 100%; background: #000; border: 1px solid #444; padding: 12px; border-radius: 10px; color: white; font-size: 18px; text-align: center; margin: 15px 0; outline: none; }
+        .roulette { position: relative; width: 100%; height: 120px; background: #111; margin: 20px 0; overflow: hidden; border-y: 1px solid #333; }
+        .line { position: absolute; left: 50%; width: 2px; height: 100%; background: red; z-index: 10; }
+        .tape { display: flex; position: absolute; transition: 5s cubic-bezier(0.1, 0, 0.1, 1); }
+        .item { min-width: 100px; height: 120px; display: flex; align-items: center; justify-content: center; }
+        .item img { width: 70px; }
 
-        /* Рулетка */
-        .roulette-container { position: relative; width: 100%; height: 140px; background: #141414; margin: 10px 0; overflow: hidden; border-top: 1px solid #333; border-bottom: 1px solid #333; }
-        .pointer { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 2px; height: 100%; background: white; z-index: 5; box-shadow: 0 0 10px #fff; }
-        .tape { display: flex; position: absolute; left: 0; height: 100%; transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1); }
-        .tape-item { min-width: 110px; display: flex; justify-content: center; align-items: center; }
-        .tape-item img { width: 75px; height: 75px; object-fit: contain; }
-
-        /* Сетка подарков */
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; }
-        .card { background: var(--card); border-radius: 12px; padding: 10px; text-align: center; border: 1px solid #2a2a2a; }
-        .card img { width: 45px; height: 45px; margin-bottom: 5px; }
-        .price { font-size: 12px; color: var(--accent); }
+        .gift-card { background: var(--card); padding: 10px; border-radius: 10px; text-align: center; font-size: 12px; }
+        .gift-card img { width: 40px; }
 
-        .main-btn { background: var(--blue); color: white; border: none; width: 90%; padding: 16px; border-radius: 15px; font-size: 16px; font-weight: bold; margin: 10px 5%; cursor: pointer; }
-        
-        /* Навигация */
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: #141414; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #333; }
-        .nav-item { color: #666; font-size: 12px; font-weight: bold; cursor: pointer; }
-        .nav-active { color: white; }
+        .btn { background: var(--blue); color: white; border: none; width: 90%; padding: 15px; border-radius: 12px; font-weight: bold; margin: 0 5%; }
+        .nav { position: fixed; bottom: 0; width: 100%; background: #111; display: flex; justify-content: space-around; padding: 15px 0; }
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
-<div id="deposit-modal">
-    <div class="modal-box">
-        <h3 style="margin:0">Пополнить Звезды</h3>
-        <input type="number" id="dep-sum" class="modal-input" value="50">
-        <button class="main-btn" style="margin:0; width:100%" onclick="sendDeposit()">ОПЛАТИТЬ</button>
-        <p onclick="closeModal()" style="color:var(--red); margin-top:15px; cursor:pointer">Отмена</p>
+<div id="modal">
+    <div class="modal-cnt">
+        <b>Сумма пополнения</b>
+        <input type="number" id="sum" value="50">
+        <button class="btn" onclick="buy()">КУПИТЬ ⭐</button>
+        <p onclick="closeM()" style="font-size:12px; color:gray">Отмена</p>
     </div>
 </div>
 
 <div class="header">
-    <div class="balance-badge" onclick="openModal()">⭐ <span id="bal">0</span> <span style="color:var(--blue)">+</span></div>
-    <div style="font-weight: bold; color: var(--accent);">STARS CASE</div>
+    <div class="bal" onclick="openM()">⭐ <span id="balance">0</span> +</div>
+    <b>STARS CASE</b>
 </div>
 
-<div id="tab-cases">
-    <div class="roulette-container">
-        <div class="pointer"></div>
+<div id="p-cases">
+    <div class="roulette">
+        <div class="line"></div>
         <div class="tape" id="tape"></div>
     </div>
-    <button class="main-btn" id="spin-btn" onclick="startSpin()">ОТКРЫТЬ ЗА 5 ⭐</button>
-    <div class="grid" id="main-grid"></div>
+    <button class="btn" id="go" onclick="spin()">ОТКРЫТЬ ЗА 5 ⭐</button>
+    <div class="grid" id="grid"></div>
 </div>
 
-<div id="tab-inv" class="hidden">
-    <h3 style="text-align:center">Ваш Инвентарь</h3>
-    <div id="inventory-list" style="text-align:center; color:#666; padding:20px;">Предметы появятся здесь после выигрыша</div>
+<div id="p-inv" class="hidden" style="text-align:center; padding-top:50px;">
+    Тут будет твой инвентарь
 </div>
 
-<div class="nav-bar">
-    <div class="nav-item nav-active" id="n1" onclick="switchTab('cases')">КЕЙСЫ</div>
-    <div class="nav-item" id="n2" onclick="switchTab('inv')">ИНВЕНТАРЬ</div>
+<div class="nav">
+    <div onclick="tab('cases')">КЕЙСЫ</div>
+    <div onclick="tab('inv')">ИНВЕНТАРЬ</div>
 </div>
 
 <script>
     const tg = window.Telegram.WebApp;
-    tg.expand();
+    let b = new URLSearchParams(location.search).get('balance') || 0;
+    document.getElementById('balance').innerText = b;
 
-    let balance = new URLSearchParams(window.location.search).get('balance') || 0;
-    document.getElementById('bal').innerText = balance;
-
-    // Список всех предметов ВКЛЮЧАЯ "Ничего" (0.jpg)
-    const gifts = [
-        { id: 0, img: '0.jpg', name: 'Ничего', p: 0 },
-        { id: 1, img: '1.jpg', name: 'Сердце', p: 15 },
-        { id: 2, img: '2.jpg', name: 'Коробка', p: 25 },
-        { id: 3, img: '3.jpg', name: 'Роза', p: 25 },
-        { id: 4, img: '4.jpg', name: 'Торт', p: 50 },
-        { id: 5, img: '5.jpg', name: 'Мишка', p: 50 },
-        { id: 6, img: '6.jpg', name: 'Елка', p: 50 }
-    ];
-
-    // Отрисовка витрины (без "Ничего")
-    const grid = document.getElementById('main-grid');
-    gifts.slice(1).forEach(g => {
-        grid.innerHTML += `<div class="card"><img src="${g.img}"><div class="price">⭐ ${g.p}</div></div>`;
-    });
-
-    // Отрисовка ленты (с шансом на "Ничего")
+    const items = ['0.jpg','1.jpg','2.jpg','3.jpg','4.jpg','5.jpg','6.jpg'];
     const tape = document.getElementById('tape');
-    for(let i=0; i<90; i++) {
-        const item = gifts[Math.floor(Math.random() * gifts.length)];
-        tape.innerHTML += `<div class="tape-item"><img src="${item.img}"></div>`;
+    const grid = document.getElementById('grid');
+
+    // Наполняем ленту
+    for(let i=0; i<100; i++) {
+        let img = items[Math.floor(Math.random()*items.length)];
+        tape.innerHTML += `<div class="item"><img src="${img}"></div>`;
+    }
+    // Наполняем витрину
+    items.slice(1).forEach(i => grid.innerHTML += `<div class="gift-card"><img src="${i}"><br>⭐ 50</div>`);
+
+    function openM() { document.getElementById('modal').style.display='flex'; }
+    function closeM() { document.getElementById('modal').style.display='none'; }
+    
+    function tab(t) {
+        document.getElementById('p-cases').classList.toggle('hidden', t==='inv');
+        document.getElementById('p-inv').classList.toggle('hidden', t==='cases');
     }
 
-    function openModal() { document.getElementById('deposit-modal').style.display = 'flex'; }
-    function closeModal() { document.getElementById('deposit-modal').style.display = 'none'; }
-
-    function switchTab(t) {
-        document.getElementById('tab-cases').classList.toggle('hidden', t === 'inv');
-        document.getElementById('tab-inv').classList.toggle('hidden', t === 'cases');
-        document.getElementById('n1').classList.toggle('nav-active', t === 'cases');
-        document.getElementById('n2').classList.toggle('nav-active', t === 'inv');
+    function buy() {
+        let s = document.getElementById('sum').value;
+        tg.sendData(JSON.stringify({action:'deposit', amount:s}));
     }
 
-    function sendDeposit() {
-        const val = document.getElementById('dep-sum').value;
-        if(val > 0) {
-            tg.sendData(JSON.stringify({action: 'deposit', amount: parseInt(val)}));
-            closeModal();
-        }
-    }
-
-    function startSpin() {
-        if(parseInt(balance) < 5) { tg.showAlert("Недостаточно звезд!"); return; }
-        const btn = document.getElementById('spin-btn');
-        btn.disabled = true;
-        btn.style.opacity = "0.5";
-        
-        const move = 75 * 110 - (window.innerWidth / 2 - 55);
-        tape.style.transform = `translateX(-${move}px)`;
-        
+    function spin() {
+        if(b < 5) return tg.showAlert("Мало звезд!");
+        document.getElementById('go').disabled = true;
+        tape.style.transform = `translateX(-${8000}px)`; // Крутим ленту
         setTimeout(() => {
-            tg.sendData(JSON.stringify({action: 'spin'}));
-            setTimeout(() => tg.close(), 1000);
+            tg.sendData(JSON.stringify({action:'spin'}));
+            setTimeout(() => tg.close(), 500);
         }, 5500);
     }
 </script>
