@@ -6,37 +6,37 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root { --bg: #121212; --card: #1e1e1e; --accent: #ffd700; --blue: #0088cc; }
-        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; overflow-x: hidden; }
+        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; overflow: hidden; }
 
-        /* Баланс */
         .header { display: flex; justify-content: space-between; padding: 15px 20px; align-items: center; }
         .balance-badge { background: rgba(255,255,255,0.07); padding: 6px 15px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-weight: bold; }
-        .plus { background: var(--blue); width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-
+        
         /* Рулетка */
         .roulette-container { position: relative; width: 100%; height: 140px; background: #181818; margin: 20px 0; overflow: hidden; border-top: 1px solid #333; border-bottom: 1px solid #333; }
         .pointer { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 3px; height: 100%; background: white; z-index: 10; box-shadow: 0 0 10px #fff; }
-        .tape { display: flex; position: absolute; left: 0; transition: transform 4s cubic-bezier(0.1, 0, 0.1, 1); height: 100%; }
+        .tape { display: flex; position: absolute; left: 0; height: 100%; will-change: transform; }
         .tape-item { min-width: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .tape-item img { width: 80px; height: 80px; object-fit: contain; }
 
-        /* Сетка подарков */
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; margin-bottom: 80px; }
         .card { background: var(--card); border-radius: 15px; padding: 15px; text-align: center; border: 1px solid #2a2a2a; }
         .card img { width: 60px; height: 60px; margin-bottom: 8px; }
         .price { background: rgba(255,215,0,0.1); color: var(--accent); padding: 4px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; }
 
-        /* Кнопки и Навигация */
-        .main-btn { background: var(--blue); color: white; border: none; width: 90%; padding: 16px; border-radius: 15px; font-size: 18px; font-weight: bold; margin: 0 5% 20px 5%; }
+        .main-btn { background: var(--blue); color: white; border: none; width: 90%; padding: 16px; border-radius: 15px; font-size: 18px; font-weight: bold; margin: 0 5% 20px 5%; transition: 0.3s; }
+        .main-btn:disabled { opacity: 0.5; }
+
         .nav { position: fixed; bottom: 0; width: 100%; background: #181818; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #333; }
-        .nav-item { color: #666; font-size: 10px; font-weight: bold; text-align: center; }
+        .nav-item { color: #666; font-size: 12px; font-weight: bold; cursor: pointer; }
         .nav-item.active { color: white; }
     </style>
 </head>
 <body>
 
+    <audio id="tick-sound" src="https://www.soundjay.com/buttons/button-50.mp3" preload="auto"></audio>
+
     <div class="header">
-        <div class="balance-badge">⭐ <span id="balance-val">0</span> <div class="plus">+</div></div>
+        <div class="balance-badge">⭐ <span id="balance-val">0</span></div>
         <div style="font-weight: bold;">Stars Case</div>
     </div>
 
@@ -47,8 +47,7 @@
 
     <button class="main-btn" id="spin-btn" onclick="spin()">ОТКРЫТЬ 5 ⭐</button>
 
-    <div class="grid" id="grid">
-        </div>
+    <div class="grid" id="grid"></div>
 
     <div class="nav">
         <div class="nav-item active">📦 КЕЙСЫ</div>
@@ -59,12 +58,10 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Считываем баланс из URL
         const urlParams = new URLSearchParams(window.location.search);
         let balance = parseInt(urlParams.get('balance')) || 0;
         document.getElementById('balance-val').innerText = balance;
 
-        // Те самые картинки из Telegram/Apple Gifts
         const giftList = [
             { name: 'Tree', img: 'https://static.ok.ru/static/stickers/v2/4/6474/10.png', price: 50 },
             { name: 'Heart', img: 'https://static.ok.ru/static/stickers/v2/4/6474/2.png', price: 15 },
@@ -74,39 +71,75 @@
             { name: 'Cake', img: 'https://static.ok.ru/static/stickers/v2/4/6474/5.png', price: 50 }
         ];
 
-        // Заполнение сетки
+        // Рендер сетки
         const grid = document.getElementById('grid');
         giftList.forEach(g => {
             grid.innerHTML += `<div class="card"><img src="${g.img}"><br><span class="price">⭐ ${g.price}</span></div>`;
         });
 
-        // Заполнение рулетки
+        // Рендер рулетки
         const tape = document.getElementById('tape');
-        for(let i=0; i<60; i++) {
+        const itemWidth = 120;
+        for(let i=0; i<80; i++) {
             const g = giftList[Math.floor(Math.random() * giftList.length)];
             tape.innerHTML += `<div class="tape-item"><img src="${g.img}"></div>`;
         }
 
+        const tickSound = document.getElementById('tick-sound');
+        let lastTickIdx = -1;
+
+        function playTick() {
+            // Сбрасываем звук в начало, чтобы он мог играть быстро
+            tickSound.currentTime = 0;
+            tickSound.play().catch(() => {}); // Игнорируем ошибки автоплея
+            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); // Вибрация
+        }
+
         function spin() {
-            if (balance < 5) { // Проверка баланса
-                tg.showAlert("У вас недостаточно звезд! ❌");
+            if (balance < 5) {
+                tg.showAlert("Недостаточно звезд! ❌");
                 return;
             }
 
             const btn = document.getElementById('spin-btn');
             btn.disabled = true;
-            btn.style.opacity = "0.5";
 
-            const winIdx = 45;
-            const itemWidth = 120;
+            const winIdx = 60; 
             const stopPos = (winIdx * itemWidth) - (window.innerWidth / 2 - itemWidth / 2);
             
-            tape.style.transform = `translateX(-${stopPos}px)`;
+            // Настройка анимации через JS для отслеживания звука
+            const startTime = performance.now();
+            const duration = 5000; // 5 секунд
 
-            setTimeout(() => {
-                tg.sendData(JSON.stringify({ action: 'spin', price: 5 })); // Отправка данных боту
-                setTimeout(() => tg.close(), 1000);
-            }, 4500);
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Функция плавности (Ease Out Cubic)
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                const currentPos = easeOut * stopPos;
+                
+                tape.style.transform = `translateX(-${currentPos}px)`;
+
+                // Звук при прохождении каждого предмета
+                const currentTickIdx = Math.floor((currentPos + window.innerWidth/2) / itemWidth);
+                if (currentTickIdx !== lastTickIdx) {
+                    playTick();
+                    lastTickIdx = currentTickIdx;
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // Конец анимации
+                    setTimeout(() => {
+                        tg.sendData(JSON.stringify({ action: 'spin', price: 5 }));
+                        setTimeout(() => tg.close(), 500);
+                    }, 500);
+                }
+            }
+
+            requestAnimationFrame(animate);
         }
     </script>
 </body>
