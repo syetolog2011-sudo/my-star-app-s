@@ -9,28 +9,24 @@
         body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; overflow: hidden; height: 100vh; }
         .header { display: flex; justify-content: space-between; padding: 15px 20px; align-items: center; }
         .balance-badge { background: rgba(255,255,255,0.07); padding: 6px 15px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-weight: bold; cursor: pointer; }
-        .plus { background: var(--blue); width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .plus { background: var(--blue); width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
         .roulette-container { position: relative; width: 100%; height: 140px; background: #181818; margin: 20px 0; overflow: hidden; border-top: 1px solid #333; border-bottom: 1px solid #333; }
         .pointer { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 3px; height: 100%; background: white; z-index: 10; box-shadow: 0 0 10px #fff; }
         .tape { display: flex; position: absolute; left: 0; height: 100%; }
-        .tape-item { min-width: 120px; display: flex; justify-content: center; align-items: center; font-size: 50px; }
+        .tape-item { min-width: 120px; display: flex; justify-content: center; align-items: center; }
+        .tape-item img { width: 85px; height: 85px; object-fit: contain; }
 
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; }
         .card { background: var(--card); border-radius: 15px; padding: 15px; text-align: center; border: 1px solid #2a2a2a; }
-        .card div { font-size: 40px; margin-bottom: 8px; }
+        .card img { width: 65px; height: 65px; margin-bottom: 8px; }
         .price { background: rgba(255,215,0,0.1); color: var(--accent); padding: 4px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
 
         .main-btn { background: var(--blue); color: white; border: none; width: 90%; padding: 16px; border-radius: 15px; font-size: 18px; font-weight: bold; margin: 0 5% 20px 5%; }
-        
         .nav { position: fixed; bottom: 0; width: 100%; background: #181818; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #333; }
         .nav-item { color: #666; font-size: 11px; font-weight: bold; text-align: center; }
         .nav-item.active { color: white; }
         .hidden { display: none; }
-        
-        #inventory-list { padding: 15px; }
-        .inv-item { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .withdraw-btn { background: #28a745; border: none; color: white; padding: 8px 15px; border-radius: 8px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -51,8 +47,9 @@
     </div>
 
     <div id="inventory-tab" class="hidden">
-        <div id="inventory-list">
-            <p style="text-align:center; color:#666;">Загрузка инвентаря...</p>
+        <div style="padding: 20px; text-align: center;">
+            <p>Ваш инвентарь пуст</p>
+            <button class="main-btn" onclick="withdraw()">ВЫВОД ЗВЕЗД</button>
         </div>
     </div>
 
@@ -68,40 +65,30 @@
         const balance = new URLSearchParams(window.location.search).get('balance') || 0;
         document.getElementById('balance-val').innerText = balance;
 
+        // Ссылки теперь ведут на файлы в твоем GitHub
         const gifts = [
-            { n: 'Tree', i: '🎄', p: 50 }, { n: 'Heart', i: '💖', p: 15 },
-            { n: 'Bear', i: '🧸', p: 50 }, { n: 'Box', i: '🎁', p: 25 },
-            { n: 'Rose', i: '🌹', p: 25 }, { n: 'Cake', i: '🎂', p: 50 }
+            { n: '1', i: '1.png', p: 50 }, { n: '2', i: '2.png', p: 15 },
+            { n: '3', i: '3.png', p: 50 }, { n: '4', i: '4.png', p: 25 },
+            { n: '5', i: '5.png', p: 25 }, { n: '6', i: '6.png', p: 50 }
         ];
 
         const grid = document.getElementById('grid');
         gifts.forEach(g => {
-            grid.innerHTML += `<div class="card"><div>${g.i}</div><span class="price">⭐ ${g.p}</span></div>`;
+            grid.innerHTML += `<div class="card"><img src="${g.i}"><br><span class="price">⭐ ${g.p}</span></div>`;
         });
 
         const tape = document.getElementById('tape');
         for(let i=0; i<80; i++) {
             const g = gifts[Math.floor(Math.random() * gifts.length)];
-            tape.innerHTML += `<div class="tape-item">${g.i}</div>`;
-        }
-
-        function switchTab(tab, el) {
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            el.classList.add('active');
-            document.getElementById('cases-tab').classList.toggle('hidden', tab === 'inv');
-            document.getElementById('inventory-tab').classList.toggle('hidden', tab === 'cases');
-            if(tab === 'inv') {
-                // В демо-версии просто показываем кнопку закрытия для просмотра в чате
-                document.getElementById('inventory-list').innerHTML = `
-                    <div class="inv-item"><span>🎁 Выигрыш</span><button class="withdraw-btn" onclick="withdraw()">ВЫВОД</button></div>
-                    <p style="font-size:12px; color:#666; text-align:center;">Нажмите Вывод, чтобы отправить запрос админу</p>
-                `;
-            }
+            tape.innerHTML += `<div class="tape-item"><img src="${g.i}"></div>`;
         }
 
         function openDeposit() {
-            tg.showPopup({title:'Пополнение', message:'Сумма:', buttons:[{id:'10',text:'10 ⭐'},{id:'50',text:'50 ⭐'},{id:'c',type:'destructive',text:'Отмена'}]}, 
-            (id)=>{ if(id!=='c') tg.sendData(JSON.stringify({action:'deposit', amount:id})); });
+            // Окно ввода суммы
+            const amount = prompt("Введите количество звезд для пополнения:", "10");
+            if (amount && !isNaN(amount) && parseInt(amount) > 0) {
+                tg.sendData(JSON.stringify({action:'deposit', amount: parseInt(amount)}));
+            }
         }
 
         function withdraw() {
@@ -109,8 +96,15 @@
             tg.close();
         }
 
+        function switchTab(tab, el) {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('cases-tab').classList.toggle('hidden', tab === 'inv');
+            document.getElementById('inventory-tab').classList.toggle('hidden', tab === 'cases');
+        }
+
         function spin() {
-            if (parseInt(balance) < 5) { tg.showAlert("Мало звезд!"); return; }
+            if (parseInt(balance) < 5) { tg.showAlert("Недостаточно звезд!"); return; }
             document.getElementById('spin-btn').disabled = true;
             const stopPos = (65 * 120) - (window.innerWidth / 2 - 60);
             let start = null;
